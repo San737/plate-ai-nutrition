@@ -20,7 +20,7 @@ type DbFoodEntry = {
   id: string;
   user_id: string;
   timestamp: string;
-  meal_type: 'breakfast' | 'lunch' | 'dinner' | 'snack';
+  meal_type: string; // Changed from strict union type to string to match what comes from DB
   image_url?: string;
   food_items: Json;
   created_at?: string;
@@ -169,11 +169,11 @@ export const getFoodEntries = async (): Promise<FoodEntry[]> => {
     
     console.log("Retrieved data from database:", data);
     
-    // Convert database entries to FoodEntry format
-    return (data || []).map((entry: DbFoodEntry) => ({
+    // Convert database entries to FoodEntry format with proper type casting
+    return (data || []).map((entry) => ({
       id: entry.id,
-      timestamp: new Date(entry.timestamp).getTime(),
-      mealType: entry.meal_type,
+      timestamp: new Date(entry.timestamp || '').getTime(),
+      mealType: entry.meal_type as 'breakfast' | 'lunch' | 'dinner' | 'snack',
       imageData: entry.image_url || '',
       foodItems: entry.food_items as unknown as FoodItem[],
       user_id: entry.user_id
@@ -242,7 +242,7 @@ export const calculateDailyNutrition = async () => {
       fat: 0,
     };
     
-    (data || []).forEach((entry: DbFoodEntry) => {
+    (data || []).forEach((entry) => {
       const foodItems = entry.food_items as unknown as FoodItem[];
       
       if (Array.isArray(foodItems)) {
