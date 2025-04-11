@@ -6,6 +6,8 @@ import {
   CardHeader, 
   CardTitle 
 } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Trash2 } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import type { FoodEntry } from '@/utils/foodRecognition';
 
@@ -39,15 +41,27 @@ const FoodHistory: React.FC<FoodHistoryProps> = ({ entries, onDeleteEntry }) => 
               {new Date(entry.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
             </p>
           </div>
-          <div className="text-right">
-            <p className="font-bold">
-              {entry.foodItems.reduce((sum, item) => sum + item.nutrition.calories, 0)} cal
-            </p>
-            <div className="flex gap-2 text-xs">
-              <span>P: {entry.foodItems.reduce((sum, item) => sum + item.nutrition.protein, 0)}g</span>
-              <span>C: {entry.foodItems.reduce((sum, item) => sum + item.nutrition.carbs, 0)}g</span>
-              <span>F: {entry.foodItems.reduce((sum, item) => sum + item.nutrition.fat, 0)}g</span>
+          <div className="flex items-center gap-2">
+            <div className="text-right">
+              <p className="font-bold">
+                {entry.foodItems.reduce((sum, item) => sum + item.nutrition.calories, 0)} cal
+              </p>
+              <div className="flex gap-2 text-xs">
+                <span>P: {entry.foodItems.reduce((sum, item) => sum + item.nutrition.protein, 0)}g</span>
+                <span>C: {entry.foodItems.reduce((sum, item) => sum + item.nutrition.carbs, 0)}g</span>
+                <span>F: {entry.foodItems.reduce((sum, item) => sum + item.nutrition.fat, 0)}g</span>
+              </div>
             </div>
+            {onDeleteEntry && (
+              <Button 
+                variant="ghost" 
+                size="icon"
+                onClick={() => onDeleteEntry(entry.id)}
+                className="text-gray-500 hover:text-red-500"
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            )}
           </div>
         </div>
       </div>

@@ -39,6 +39,7 @@ const Index = () => {
     fat: 0
   });
   const [loadingEntries, setLoadingEntries] = useState(true);
+  const [activeTab, setActiveTab] = useState("track");
 
   // Load food entries from Supabase on mount
   useEffect(() => {
@@ -94,15 +95,15 @@ const Index = () => {
   const handleConfirmFood = async () => {
     if (detectedFoods.length === 0) return;
     
-    const newEntry: FoodEntry = {
-      id: Date.now().toString(),
-      timestamp: Date.now(),
-      mealType: determineMealType(),
-      imageData: capturedImage || '',
-      foodItems: detectedFoods
-    };
-    
     try {
+      const newEntry: FoodEntry = {
+        id: Date.now().toString(),
+        timestamp: Date.now(),
+        mealType: determineMealType(),
+        imageData: capturedImage || '',
+        foodItems: detectedFoods
+      };
+      
       // Save to Supabase
       const result = await saveFoodEntry(newEntry);
       
@@ -172,7 +173,7 @@ const Index = () => {
       <Header />
       
       <div className="container mx-auto px-4 py-6">
-        <Tabs defaultValue="track" className="w-full">
+        <Tabs defaultValue="track" value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="grid w-full grid-cols-2 mb-8">
             <TabsTrigger value="track">Track Food</TabsTrigger>
             <TabsTrigger value="summary">Summary</TabsTrigger>
