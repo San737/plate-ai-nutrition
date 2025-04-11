@@ -38,22 +38,39 @@ const Index = () => {
     carbs: 0,
     fat: 0
   });
+  const [loadingEntries, setLoadingEntries] = useState(true);
 
-  // Load food entries from local storage on mount
+  // Load food entries from Supabase on mount
   useEffect(() => {
-    const entries = getFoodEntries();
-    setFoodEntries(entries);
+    const loadFoodEntries = async () => {
+      setLoadingEntries(true);
+      try {
+        const entries = await getFoodEntries();
+        setFoodEntries(entries);
+        
+        const nutrition = await calculateDailyNutrition();
+        setDailyNutrition(nutrition);
+      } catch (error) {
+        console.error("Error loading food data:", error);
+        toast({
+          title: "Error",
+          description: "Could not load your food entries.",
+          variant: "destructive"
+        });
+      } finally {
+        setLoadingEntries(false);
+      }
+    };
     
-    const nutrition = calculateDailyNutrition();
-    setDailyNutrition(nutrition);
-  }, []);
+    loadFoodEntries();
+  }, [toast]);
 
   const handleImageCapture = async (imageData: string) => {
     setCapturedImage(imageData);
     setIsAnalyzing(true);
     
     try {
-      // This would call our AI model in a real app
+      // This now uses our Gemini edge function via Supabase
       const detectedItems = await detectFoodFromImage(imageData);
       setDetectedFoods(detectedItems);
     } catch (error) {
@@ -74,7 +91,7 @@ const Index = () => {
     setDetectedFoods([]);
   };
   
-  const handleConfirmFood = () => {
+  const handleConfirmFood = async () => {
     if (detectedFoods.length === 0) return;
     
     const newEntry: FoodEntry = {
@@ -85,49 +102,69 @@ const Index = () => {
       foodItems: detectedFoods
     };
     
-    // Save to local storage
-    saveFoodEntry(newEntry);
-    
-    // Update state
-    setFoodEntries([newEntry, ...foodEntries]);
-    
-    // Update daily nutrition
-    const updatedNutrition = {...dailyNutrition};
-    detectedFoods.forEach(food => {
-      updatedNutrition.calories += food.nutrition.calories;
-      updatedNutrition.protein += food.nutrition.protein;
-      updatedNutrition.carbs += food.nutrition.carbs;
-      updatedNutrition.fat += food.nutrition.fat;
-    });
-    setDailyNutrition(updatedNutrition);
-    
-    // Show toast notification
-    toast({
-      title: "Food logged successfully",
-      description: `Added ${detectedFoods.length} items to your food log`
-    });
-    
-    // Reset
-    handleReset();
+    try {
+      // Save to Supabase
+      const result = await saveFoodEntry(newEntry);
+      
+      if (!result.success) {
+        throw new Error(result.error || "Unknown error");
+      }
+      
+      // Refresh entries and nutrition data
+      const entries = await getFoodEntries();
+      setFoodEntries(entries);
+      
+      const updatedNutrition = await calculateDailyNutrition();
+      setDailyNutrition(updatedNutrition);
+      
+      // Show toast notification
+      toast({
+        title: "Food logged successfully",
+        description: `Added ${detectedFoods.length} items to your food log`
+      });
+      
+      // Reset
+      handleReset();
+    } catch (error) {
+      console.error("Error saving food entry:", error);
+      toast({
+        title: "Error",
+        description: "Could not save your food entry.",
+        variant: "destructive"
+      });
+    }
   };
   
-  const handleDeleteEntry = (entryId: string) => {
-    // Delete from local storage
-    deleteFoodEntry(entryId);
-    
-    // Update state
-    const updatedEntries = foodEntries.filter(entry => entry.id !== entryId);
-    setFoodEntries(updatedEntries);
-    
-    // Update daily nutrition totals
-    const nutrition = calculateDailyNutrition();
-    setDailyNutrition(nutrition);
-    
-    // Show toast notification
-    toast({
-      title: "Entry deleted",
-      description: "Food log entry has been removed"
-    });
+  const handleDeleteEntry = async (entryId: string) => {
+    try {
+      // Delete from Supabase
+      const success = await deleteFoodEntry(entryId);
+      
+      if (!success) {
+        throw new Error("Failed to delete entry");
+      }
+      
+      // Update state
+      const updatedEntries = await getFoodEntries();
+      setFoodEntries(updatedEntries);
+      
+      // Update daily nutrition totals
+      const nutrition = await calculateDailyNutrition();
+      setDailyNutrition(nutrition);
+      
+      // Show toast notification
+      toast({
+        title: "Entry deleted",
+        description: "Food log entry has been removed"
+      });
+    } catch (error) {
+      console.error("Error deleting entry:", error);
+      toast({
+        title: "Error",
+        description: "Could not delete the food entry.",
+        variant: "destructive"
+      });
+    }
   };
   
   return (
@@ -182,10 +219,16 @@ const Index = () => {
                   }}
                 />
                 
-                <FoodHistory 
-                  entries={foodEntries}
-                  onDeleteEntry={handleDeleteEntry}
-                />
+                {loadingEntries ? (
+                  <div className="w-full mt-6 p-8 bg-white rounded-lg border border-gray-200 flex justify-center">
+                    <div className="w-8 h-8 border-4 border-t-primary border-r-primary border-b-primary border-l-transparent rounded-full animate-spin"></div>
+                  </div>
+                ) : (
+                  <FoodHistory 
+                    entries={foodEntries}
+                    onDeleteEntry={handleDeleteEntry}
+                  />
+                )}
               </div>
             </div>
           </TabsContent>
@@ -219,10 +262,16 @@ const Index = () => {
                 </p>
               </div>
               
-              <FoodHistory 
-                entries={foodEntries}
-                onDeleteEntry={handleDeleteEntry}
-              />
+              {loadingEntries ? (
+                <div className="w-full p-8 bg-white rounded-lg border border-gray-200 flex justify-center">
+                  <div className="w-8 h-8 border-4 border-t-primary border-r-primary border-b-primary border-l-transparent rounded-full animate-spin"></div>
+                </div>
+              ) : (
+                <FoodHistory 
+                  entries={foodEntries}
+                  onDeleteEntry={handleDeleteEntry}
+                />
+              )}
             </div>
           </TabsContent>
         </Tabs>

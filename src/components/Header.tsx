@@ -1,20 +1,18 @@
 
 import React from 'react';
 import { Utensils } from 'lucide-react';
+import UserMenu from './UserMenu';
 
-const Header = () => {
+const Header: React.FC = () => {
   return (
-    <header className="bg-white border-b border-gray-200 py-4">
-      <div className="container mx-auto px-4 flex justify-between items-center">
-        <div className="flex items-center space-x-2">
-          <Utensils className="h-6 w-6 text-foodtrack-primary" />
-          <h1 className="text-xl font-bold text-gray-800">NutriLens</h1>
+    <header className="bg-white border-b border-gray-200">
+      <div className="container mx-auto px-4 py-3 flex justify-between items-center">
+        <div className="flex items-center">
+          <Utensils className="h-6 w-6 text-emerald-500 mr-2" />
+          <h1 className="text-xl font-bold">Food Track</h1>
         </div>
-        <div className="flex items-center space-x-2">
-          <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center">
-            <span className="text-sm font-medium">JD</span>
-          </div>
-        </div>
+        
+        <UserMenu />
       </div>
     </header>
   );
