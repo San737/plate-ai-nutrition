@@ -79,8 +79,7 @@ const NutritionSummary: React.FC<NutritionSummaryProps> = ({
             </div>
             <Progress
               value={calculatePercentage(protein.current, protein.goal)}
-              className="h-2 bg-gray-100"
-              indicatorClassName="bg-blue-500"
+              className="h-2 bg-gray-100 [&>div]:bg-blue-500"
             />
           </div>
           
@@ -93,8 +92,7 @@ const NutritionSummary: React.FC<NutritionSummaryProps> = ({
             </div>
             <Progress
               value={calculatePercentage(carbs.current, carbs.goal)}
-              className="h-2 bg-gray-100"
-              indicatorClassName="bg-amber-500"
+              className="h-2 bg-gray-100 [&>div]:bg-amber-500"
             />
           </div>
           
@@ -107,8 +105,7 @@ const NutritionSummary: React.FC<NutritionSummaryProps> = ({
             </div>
             <Progress
               value={calculatePercentage(fat.current, fat.goal)}
-              className="h-2 bg-gray-100"
-              indicatorClassName="bg-red-500"
+              className="h-2 bg-gray-100 [&>div]:bg-red-500"
             />
           </div>
         </div>
