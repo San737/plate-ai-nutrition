@@ -2,6 +2,7 @@
 import type { FoodItem } from '@/data/nutritionDatabase';
 import { getNutritionData } from '@/data/nutritionDatabase';
 import { supabase } from '@/integrations/supabase/client';
+import type { Json } from '@/integrations/supabase/types';
 
 // We're using this type to represent a recognized food entry
 export interface FoodEntry {
@@ -20,7 +21,7 @@ type DbFoodEntry = {
   timestamp: string;
   meal_type: 'breakfast' | 'lunch' | 'dinner' | 'snack';
   image_url?: string;
-  food_items: FoodItem[];
+  food_items: Json;
   created_at?: string;
 }
 
@@ -119,18 +120,18 @@ export const saveFoodEntry = async (entry: FoodEntry): Promise<{ success: boolea
       throw new Error("User not authenticated");
     }
     
-    // Prepare entry for database
+    // Prepare entry for database - convert FoodItem[] to Json compatible format
     const dbEntry = {
       meal_type: entry.mealType,
-      food_items: entry.foodItems,
+      food_items: entry.foodItems as unknown as Json,
       timestamp: new Date(entry.timestamp).toISOString(),
       user_id: user.id,
     };
     
-    // Insert into database using type assertion for proper typing
+    // Insert into database
     const { error } = await supabase
       .from('food_entries')
-      .insert(dbEntry as unknown as DbFoodEntry);
+      .insert(dbEntry);
     
     if (error) throw error;
     
@@ -151,22 +152,22 @@ export const getFoodEntries = async (): Promise<FoodEntry[]> => {
       return [];
     }
     
-    // Query database with type assertion for proper typing
+    // Query database
     const { data, error } = await supabase
       .from('food_entries')
       .select('*')
       .eq('user_id', user.id)
-      .order('timestamp', { ascending: false }) as { data: DbFoodEntry[] | null, error: any };
+      .order('timestamp', { ascending: false });
     
     if (error) throw error;
     
     // Convert database entries to FoodEntry format
-    return (data || []).map(entry => ({
+    return (data || []).map((entry: any) => ({
       id: entry.id,
       timestamp: new Date(entry.timestamp).getTime(),
       mealType: entry.meal_type,
       imageData: entry.image_url || '',
-      foodItems: entry.food_items,
+      foodItems: entry.food_items as FoodItem[],
     }));
   } catch (error) {
     console.error("Error getting food entries:", error);
@@ -180,7 +181,7 @@ export const deleteFoodEntry = async (entryId: string): Promise<boolean> => {
     const { error } = await supabase
       .from('food_entries')
       .delete()
-      .eq('id', entryId) as { error: any };
+      .eq('id', entryId);
     
     if (error) throw error;
     
@@ -214,7 +215,7 @@ export const calculateDailyNutrition = async () => {
       .from('food_entries')
       .select('*')
       .eq('user_id', user.id)
-      .gte('timestamp', today.toISOString()) as { data: DbFoodEntry[] | null, error: any };
+      .gte('timestamp', today.toISOString());
     
     if (error) throw error;
     
@@ -226,8 +227,8 @@ export const calculateDailyNutrition = async () => {
       fat: 0,
     };
     
-    (data || []).forEach(entry => {
-      const foodItems = entry.food_items;
+    (data || []).forEach((entry: any) => {
+      const foodItems = entry.food_items as FoodItem[];
       foodItems.forEach(item => {
         totalNutrition.calories += item.nutrition.calories;
         totalNutrition.protein += item.nutrition.protein;
