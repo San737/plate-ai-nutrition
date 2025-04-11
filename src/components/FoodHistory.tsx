@@ -32,40 +32,47 @@ const FoodHistory: React.FC<FoodHistoryProps> = ({ entries, onDeleteEntry }) => 
       );
     }
     
-    return entries.map((entry) => (
-      <div key={entry.id} className="py-3 border-b last:border-b-0">
-        <div className="flex justify-between">
-          <div>
-            <h4 className="font-medium">{entry.foodItems.map(item => item.name).join(', ')}</h4>
-            <p className="text-sm text-gray-500">
-              {new Date(entry.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-            </p>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="text-right">
-              <p className="font-bold">
-                {entry.foodItems.reduce((sum, item) => sum + item.nutrition.calories, 0)} cal
+    return entries.map((entry) => {
+      // Ensure foodItems is an array
+      const foodItems = Array.isArray(entry.foodItems) ? entry.foodItems : [];
+      
+      return (
+        <div key={entry.id} className="py-3 border-b last:border-b-0">
+          <div className="flex justify-between">
+            <div>
+              <h4 className="font-medium">
+                {foodItems.map(item => item.name).join(', ')}
+              </h4>
+              <p className="text-sm text-gray-500">
+                {new Date(entry.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
               </p>
-              <div className="flex gap-2 text-xs">
-                <span>P: {entry.foodItems.reduce((sum, item) => sum + item.nutrition.protein, 0)}g</span>
-                <span>C: {entry.foodItems.reduce((sum, item) => sum + item.nutrition.carbs, 0)}g</span>
-                <span>F: {entry.foodItems.reduce((sum, item) => sum + item.nutrition.fat, 0)}g</span>
-              </div>
             </div>
-            {onDeleteEntry && (
-              <Button 
-                variant="ghost" 
-                size="icon"
-                onClick={() => onDeleteEntry(entry.id)}
-                className="text-gray-500 hover:text-red-500"
-              >
-                <Trash2 className="h-4 w-4" />
-              </Button>
-            )}
+            <div className="flex items-center gap-2">
+              <div className="text-right">
+                <p className="font-bold">
+                  {foodItems.reduce((sum, item) => sum + (item.nutrition?.calories || 0), 0)} cal
+                </p>
+                <div className="flex gap-2 text-xs">
+                  <span>P: {foodItems.reduce((sum, item) => sum + (item.nutrition?.protein || 0), 0)}g</span>
+                  <span>C: {foodItems.reduce((sum, item) => sum + (item.nutrition?.carbs || 0), 0)}g</span>
+                  <span>F: {foodItems.reduce((sum, item) => sum + (item.nutrition?.fat || 0), 0)}g</span>
+                </div>
+              </div>
+              {onDeleteEntry && (
+                <Button 
+                  variant="ghost" 
+                  size="icon"
+                  onClick={() => onDeleteEntry(entry.id)}
+                  className="text-gray-500 hover:text-red-500"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              )}
+            </div>
           </div>
         </div>
-      </div>
-    ));
+      );
+    });
   };
   
   return (

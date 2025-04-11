@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -47,6 +46,7 @@ const Index = () => {
       setLoadingEntries(true);
       try {
         const entries = await getFoodEntries();
+        console.log("Loaded entries:", entries);
         setFoodEntries(entries);
         
         const nutrition = await calculateDailyNutrition();
@@ -73,6 +73,7 @@ const Index = () => {
     try {
       // This now uses our Gemini edge function via Supabase
       const detectedItems = await detectFoodFromImage(imageData);
+      console.log("Detected food items:", detectedItems);
       setDetectedFoods(detectedItems);
     } catch (error) {
       console.error("Error analyzing food image:", error);
@@ -103,6 +104,8 @@ const Index = () => {
         imageData: capturedImage || '',
         foodItems: detectedFoods
       };
+      
+      console.log("Confirming food entry:", newEntry);
       
       // Save to Supabase
       const result = await saveFoodEntry(newEntry);
@@ -138,6 +141,8 @@ const Index = () => {
   
   const handleDeleteEntry = async (entryId: string) => {
     try {
+      console.log("Deleting entry:", entryId);
+      
       // Delete from Supabase
       const success = await deleteFoodEntry(entryId);
       

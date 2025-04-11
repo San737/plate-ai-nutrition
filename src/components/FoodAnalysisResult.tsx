@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Check, Edit2, X } from 'lucide-react';
+import { Check, Edit2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { 
   Card, 
@@ -43,10 +43,10 @@ const FoodAnalysisResult: React.FC<FoodAnalysisResultProps> = ({
   }
   
   // Calculate total nutrition values
-  const totalCalories = detectedFoods.reduce((sum, food) => sum + food.nutrition.calories, 0);
-  const totalProtein = detectedFoods.reduce((sum, food) => sum + food.nutrition.protein, 0);
-  const totalCarbs = detectedFoods.reduce((sum, food) => sum + food.nutrition.carbs, 0);
-  const totalFat = detectedFoods.reduce((sum, food) => sum + food.nutrition.fat, 0);
+  const totalCalories = detectedFoods.reduce((sum, food) => sum + (food.nutrition?.calories || 0), 0);
+  const totalProtein = detectedFoods.reduce((sum, food) => sum + (food.nutrition?.protein || 0), 0);
+  const totalCarbs = detectedFoods.reduce((sum, food) => sum + (food.nutrition?.carbs || 0), 0);
+  const totalFat = detectedFoods.reduce((sum, food) => sum + (food.nutrition?.fat || 0), 0);
   
   return (
     <Card className="w-full mt-6">
@@ -56,7 +56,7 @@ const FoodAnalysisResult: React.FC<FoodAnalysisResultProps> = ({
       <CardContent className="space-y-4">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           {detectedFoods.map((food, index) => (
-            <div key={index} className="food-item-card">
+            <div key={index} className="food-item-card p-3 border rounded-md">
               <div className="flex items-center justify-between">
                 <div className="flex items-center">
                   <div className="w-12 h-12 rounded-full bg-gray-100 mr-3 flex items-center justify-center overflow-hidden">
@@ -72,19 +72,19 @@ const FoodAnalysisResult: React.FC<FoodAnalysisResultProps> = ({
                   </div>
                 </div>
                 <div className="text-right">
-                  <p className="font-bold">{food.nutrition.calories} cal</p>
+                  <p className="font-bold">{food.nutrition?.calories || 0} cal</p>
                 </div>
               </div>
               
               <div className="mt-3 flex flex-wrap gap-2">
-                <span className="nutrition-pill protein-pill">
-                  {food.nutrition.protein}g protein
+                <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full">
+                  {food.nutrition?.protein || 0}g protein
                 </span>
-                <span className="nutrition-pill carbs-pill">
-                  {food.nutrition.carbs}g carbs
+                <span className="text-xs bg-amber-100 text-amber-800 px-2 py-1 rounded-full">
+                  {food.nutrition?.carbs || 0}g carbs
                 </span>
-                <span className="nutrition-pill fat-pill">
-                  {food.nutrition.fat}g fat
+                <span className="text-xs bg-red-100 text-red-800 px-2 py-1 rounded-full">
+                  {food.nutrition?.fat || 0}g fat
                 </span>
               </div>
             </div>
@@ -95,7 +95,7 @@ const FoodAnalysisResult: React.FC<FoodAnalysisResultProps> = ({
           <h4 className="font-medium mb-3">Total Nutrition</h4>
           <div className="grid grid-cols-4 gap-2 text-center">
             <div>
-              <p className="text-lg font-bold text-foodtrack-dark">{totalCalories}</p>
+              <p className="text-lg font-bold text-gray-800">{totalCalories}</p>
               <p className="text-xs text-gray-500">Calories</p>
             </div>
             <div>

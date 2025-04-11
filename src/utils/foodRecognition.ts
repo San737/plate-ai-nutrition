@@ -3,6 +3,7 @@ import type { FoodItem } from '@/data/nutritionDatabase';
 import { getNutritionData } from '@/data/nutritionDatabase';
 import { supabase } from '@/integrations/supabase/client';
 import type { Json } from '@/integrations/supabase/types';
+import type { Database } from '@/integrations/supabase/types';
 
 // We're using this type to represent a recognized food entry
 export interface FoodEntry {
@@ -128,12 +129,17 @@ export const saveFoodEntry = async (entry: FoodEntry): Promise<{ success: boolea
       user_id: user.id,
     };
     
+    console.log("Saving entry:", dbEntry);
+    
     // Insert into database
     const { error } = await supabase
       .from('food_entries')
       .insert(dbEntry);
     
-    if (error) throw error;
+    if (error) {
+      console.error("Database error when saving entry:", error);
+      throw error;
+    }
     
     return { success: true };
   } catch (error) {
@@ -161,13 +167,16 @@ export const getFoodEntries = async (): Promise<FoodEntry[]> => {
     
     if (error) throw error;
     
+    console.log("Retrieved data from database:", data);
+    
     // Convert database entries to FoodEntry format
-    return (data || []).map((entry: any) => ({
+    return (data || []).map((entry: DbFoodEntry) => ({
       id: entry.id,
       timestamp: new Date(entry.timestamp).getTime(),
       mealType: entry.meal_type,
       imageData: entry.image_url || '',
-      foodItems: entry.food_items as FoodItem[],
+      foodItems: entry.food_items as unknown as FoodItem[],
+      user_id: entry.user_id
     }));
   } catch (error) {
     console.error("Error getting food entries:", error);
@@ -178,12 +187,16 @@ export const getFoodEntries = async (): Promise<FoodEntry[]> => {
 // Delete a food entry from Supabase
 export const deleteFoodEntry = async (entryId: string): Promise<boolean> => {
   try {
+    console.log("Deleting entry with ID:", entryId);
     const { error } = await supabase
       .from('food_entries')
       .delete()
       .eq('id', entryId);
     
-    if (error) throw error;
+    if (error) {
+      console.error("Database error when deleting entry:", error);
+      throw error;
+    }
     
     return true;
   } catch (error) {
@@ -219,6 +232,8 @@ export const calculateDailyNutrition = async () => {
     
     if (error) throw error;
     
+    console.log("Retrieved today's entries:", data);
+    
     // Calculate totals
     const totalNutrition = {
       calories: 0,
@@ -227,14 +242,19 @@ export const calculateDailyNutrition = async () => {
       fat: 0,
     };
     
-    (data || []).forEach((entry: any) => {
-      const foodItems = entry.food_items as FoodItem[];
-      foodItems.forEach(item => {
-        totalNutrition.calories += item.nutrition.calories;
-        totalNutrition.protein += item.nutrition.protein;
-        totalNutrition.carbs += item.nutrition.carbs;
-        totalNutrition.fat += item.nutrition.fat;
-      });
+    (data || []).forEach((entry: DbFoodEntry) => {
+      const foodItems = entry.food_items as unknown as FoodItem[];
+      
+      if (Array.isArray(foodItems)) {
+        foodItems.forEach(item => {
+          if (item && item.nutrition) {
+            totalNutrition.calories += item.nutrition.calories || 0;
+            totalNutrition.protein += item.nutrition.protein || 0;
+            totalNutrition.carbs += item.nutrition.carbs || 0;
+            totalNutrition.fat += item.nutrition.fat || 0;
+          }
+        });
+      }
     });
     
     return totalNutrition;
