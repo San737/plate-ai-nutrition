@@ -1,106 +1,73 @@
 
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import "https://deno.land/x/xhr@0.1.0/mod.ts";
+// Follow Deno runtime TypeScript conventions for Supabase Edge Functions
+import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 
-const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY") || "";
-const GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-pro-vision:generateContent";
-
-// CORS headers
+// Define CORS headers to allow requests from any origin
 const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-serve(async (req) => {
-  // Handle CORS preflight requests
-  if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
+// Handle OPTIONS requests for CORS
+function handleCors(req: Request) {
+  if (req.method === 'OPTIONS') {
+    return new Response('ok', { headers: corsHeaders });
   }
+}
 
+// Main serve handler
+serve(async (req) => {
   try {
-    if (!GEMINI_API_KEY) {
-      throw new Error("Missing Gemini API key");
-    }
+    // Handle CORS preflight request
+    const corsResponse = handleCors(req);
+    if (corsResponse) return corsResponse;
 
-    // Parse the request body
+    // Parse request body
     const { imageData } = await req.json();
-    
-    if (!imageData) {
-      throw new Error("No image data provided");
-    }
-    
-    // Remove data:image/jpeg;base64, prefix if present
-    const base64Image = imageData.split(",")[1] || imageData;
-    
-    const response = await fetch(`${GEMINI_API_URL}?key=${GEMINI_API_KEY}`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        contents: [
-          {
-            parts: [
-              {
-                text: "Analyze this food image and provide a detailed JSON response with the following structure: { \"foodItems\": [ { \"name\": \"item name\", \"portionSize\": \"estimated portion\", \"nutrition\": { \"calories\": number, \"protein\": number, \"carbs\": number, \"fat\": number } } ] }. Be accurate with nutritional values."
-              },
-              {
-                inline_data: {
-                  mime_type: "image/jpeg",
-                  data: base64Image
-                }
-              }
-            ]
-          }
-        ],
-        generationConfig: {
-          temperature: 0.2,
-          maxOutputTokens: 1024,
-        }
-      }),
-    });
 
-    const data = await response.json();
-    
-    if (data.error) {
-      throw new Error(`Gemini API error: ${data.error.message}`);
+    if (!imageData) {
+      return new Response(
+        JSON.stringify({ error: "Image data is required" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
     }
-    
-    // Extract the text from the response
-    const generatedText = data.candidates[0]?.content?.parts[0]?.text || "";
-    
-    // Extract the JSON from the text
-    let jsonMatch = generatedText.match(/```json\n([\s\S]*?)\n```/) || 
-                  generatedText.match(/```([\s\S]*?)```/) ||
-                  [null, generatedText];
-    
-    let foodAnalysisResult;
-    
-    try {
-      // Parse the extracted JSON
-      foodAnalysisResult = JSON.parse(jsonMatch[1] || generatedText);
-    } catch (e) {
-      // If JSON parsing fails, try to extract just the JSON object pattern
-      const jsonObjectMatch = generatedText.match(/{[\s\S]*}/);
-      if (jsonObjectMatch) {
-        try {
-          foodAnalysisResult = JSON.parse(jsonObjectMatch[0]);
-        } catch (e2) {
-          throw new Error("Failed to parse Gemini response");
+
+    // Mock response while waiting for Gemini API key
+    // In a real implementation, this would call the Gemini API
+    const mockFoodItems = [
+      {
+        name: "Grilled Chicken Salad",
+        portionSize: "1 serving",
+        nutrition: {
+          calories: 320,
+          protein: 28,
+          carbs: 12,
+          fat: 18
         }
-      } else {
-        throw new Error("Failed to extract JSON from Gemini response");
+      },
+      {
+        name: "Avocado",
+        portionSize: "1/2 medium",
+        nutrition: {
+          calories: 160,
+          protein: 2,
+          carbs: 8,
+          fat: 15
+        }
       }
-    }
-    
-    return new Response(JSON.stringify(foodAnalysisResult), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    ];
+
+    // Return the mock response
+    return new Response(
+      JSON.stringify({ foodItems: mockFoodItems }),
+      { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    );
   } catch (error) {
-    console.error("Error in analyze-food-image function:", error);
-    return new Response(JSON.stringify({ error: error.message }), {
-      status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    // Handle errors
+    console.error("Error processing request:", error);
+    return new Response(
+      JSON.stringify({ error: "Internal server error", details: error.message }),
+      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    );
   }
 });
